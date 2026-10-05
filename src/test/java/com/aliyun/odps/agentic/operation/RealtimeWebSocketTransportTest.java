@@ -10,6 +10,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -121,6 +122,39 @@ class RealtimeWebSocketTransportTest {
         } finally {
             firstCompletion.complete(socket);
             transport.close("test complete");
+        }
+    }
+
+    @Test
+    void closeInterruptsPendingSendAndDropsQueuedFrames() throws Exception {
+        RealtimeWebSocketTransport transport = transport();
+        List<String> sent = new CopyOnWriteArrayList<>();
+        CountDownLatch firstStarted = new CountDownLatch(1);
+        AtomicReference<Thread> writer = new AtomicReference<>();
+        CompletableFuture<WebSocket> pendingSend = new CompletableFuture<>();
+        WebSocket socket = fakeSocket((json, ws) -> {
+            sent.add(json);
+            writer.set(Thread.currentThread());
+            firstStarted.countDown();
+            return pendingSend;
+        });
+        transport.onOpen(socket);
+        try {
+            assertTrue(transport.send("first"));
+            assertTrue(firstStarted.await(3, TimeUnit.SECONDS));
+            assertTrue(transport.send("queued"));
+            transport.close("rotation");
+            writer.get().join(3000);
+            assertFalse(writer.get().isAlive(), "Closing must terminate a writer waiting for send completion");
+            assertFalse(pendingSend.isDone(), "Closing must not depend on the provider completing the send");
+            assertEquals(List.of("first"), sent);
+            assertEquals(0, transport.outboxDepth());
+            assertEquals(0, transport.droppedSends());
+            assertFalse(transport.send("after close"));
+        } finally {
+            pendingSend.complete(socket);
+            transport.close("test complete");
+            if (writer.get() != null) writer.get().join(3000);
         }
     }
 

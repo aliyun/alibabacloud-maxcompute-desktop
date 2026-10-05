@@ -102,7 +102,10 @@ public final class RealtimeWebSocketTransport implements WebSocket.Listener {
                 OutFrame frame = outbox.take();
                 if (socket != current) break;
                 try {
-                    current.sendText(frame.json(), true).join();
+                    // Waiting must remain interruptible when close/rotation stops this writer.
+                    current.sendText(frame.json(), true).get();
+                } catch (InterruptedException closing) {
+                    throw closing;
                 } catch (Exception error) {
                     log.warn("[realtime] upstream send failed ({}): {}", droppedSends.incrementAndGet(),
                         String.valueOf(error.getMessage()));
