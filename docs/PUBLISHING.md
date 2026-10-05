@@ -65,13 +65,12 @@ mvn -B -ntp -Prelease-artifacts clean install
 python3 scripts/check-release.py --artifacts
 
 # 已配置本地 GPG 时，生成签名产物，但不上传 Central
-mvn -B -ntp -Prelease-artifacts,central-publish \
-  -Dcentral.skipPublishing=true -DskipTests clean deploy
+mvn -B -ntp -Prelease-artifacts,sign-artifacts -DskipTests clean verify
 python3 scripts/check-release.py --artifacts --signed
 ```
 
-跳过上传的参数由 POM 显式绑定到插件配置。此模式不需要 Portal token，
-只生成签名产物；Central 上传 bundle 由真实发布步骤生成。
+`sign-artifacts` 只启用 GPG 签名，不加载 Central 发布插件，因此不需要 Portal token。
+真实发布使用 `central-publish`：它复用同一签名配置，并生成及上传 Central bundle。
 
 本地真实发布同样使用 `-Prelease-artifacts,central-publish deploy`，
 在 Maven `settings.xml` 的 `central` server 中提供 Portal token，

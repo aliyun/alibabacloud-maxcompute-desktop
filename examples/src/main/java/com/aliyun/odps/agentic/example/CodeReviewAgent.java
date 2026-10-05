@@ -12,6 +12,7 @@ import com.aliyun.odps.agentic.session.AgentEvent;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -92,6 +93,9 @@ public class CodeReviewAgent {
                 Provide specific line references and concrete suggestions.
                 """;
         }
+
+        @Override
+        public Set<String> getIncludedTools() { return Set.of("read", "glob", "grep"); }
 
         @Override
         public int getMaxSteps() { return 20; }
