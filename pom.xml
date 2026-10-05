@@ -6,7 +6,7 @@
 
     <groupId>com.aliyun.odps</groupId>
     <artifactId>agentic-sdk</artifactId>
-    <version>${revision}</version>
+    <version>1.6.9</version>
     <packaging>jar</packaging>
 
     <name>Agentic SDK</name>
@@ -39,7 +39,6 @@
     </scm>
 
     <properties>
-        <revision>1.6.9</revision>
         <central.skipPublishing>false</central.skipPublishing>
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

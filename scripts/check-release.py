@@ -27,6 +27,10 @@ def read_project(project):
         version = pom.findtext("m:properties/m:revision", namespaces=NS)
     if not version or "${" in version:
         raise ValueError("SDK version is missing or unresolved")
+    examples = ET.parse(project / "examples/pom.xml").getroot()
+    example_version = examples.findtext("m:properties/m:agentic-sdk.version", namespaces=NS)
+    if example_version != version:
+        raise ValueError("example dependency must match the SDK version being tested")
     return version
 
 
@@ -79,7 +83,7 @@ def main():
     try:
         version = read_project(args.project_dir)
         if args.tag and release_version(args.tag) != version:
-            raise ValueError("tag version must match pom.xml revision; update the version before tagging")
+            raise ValueError("tag version must match the SDK version in pom.xml; update the version before tagging")
         if args.artifacts:
             check_artifacts(args.project_dir, version, args.signed)
     except (ValueError, OSError, ET.ParseError) as error:

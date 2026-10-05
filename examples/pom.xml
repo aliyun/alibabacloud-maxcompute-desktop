@@ -6,14 +6,14 @@
 
     <groupId>com.aliyun.odps</groupId>
     <artifactId>agentic-sdk-examples</artifactId>
-    <version>${revision}</version>
+    <version>1.6.9</version>
     <packaging>jar</packaging>
 
     <name>Agentic SDK Examples</name>
     <description>Example applications demonstrating the Agentic SDK.</description>
 
     <properties>
-        <revision>1.6.9</revision>
+        <agentic-sdk.version>1.6.9</agentic-sdk.version>
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
@@ -22,7 +22,7 @@
         <dependency>
             <groupId>com.aliyun.odps</groupId>
             <artifactId>agentic-sdk</artifactId>
-            <version>${revision}</version>
+            <version>${agentic-sdk.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

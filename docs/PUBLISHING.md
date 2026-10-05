@@ -35,7 +35,8 @@ SDK 使用独立 POM 和 `com.aliyun.odps:agentic-sdk` 坐标。发布只包含 
 
 ## 发布版本
 
-先更新 `pom.xml` 和 `examples/pom.xml` 中的 `revision`，提交后创建相同版本的标签。
+先更新 `pom.xml` 的 SDK 版本，以及 `examples/pom.xml` 的 `agentic-sdk.version`，
+提交后创建相同版本的标签。
 例如发布 `1.6.9` 时：
 
 ```bash

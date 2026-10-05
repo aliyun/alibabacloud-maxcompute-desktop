@@ -72,7 +72,7 @@ mvn -B -ntp clean install
 mvn -B -ntp -pl agent-sdk -am install
 ```
 
-SDK 的 POM 可以独立使用；版本由 `pom.xml` 的 `revision` 属性定义。
+SDK 的 POM 可以独立使用；版本由 `pom.xml` 的 `<version>` 定义，与 Studio 的发布版本独立。
 Maven Central 的发布流程见 [发布指南](docs/PUBLISHING.md)。
 源码和 CI 已配置不代表相应版本已经在 Central 发布；首次发布前请本地安装。
 

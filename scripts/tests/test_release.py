@@ -25,6 +25,15 @@ class ReleaseGuardTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "without a parent"):
                 release.read_project(project)
 
+    def test_rejects_stale_example_dependency(self):
+        with tempfile.TemporaryDirectory() as directory:
+            project = Path(directory)
+            (project / "examples").mkdir()
+            (project / "pom.xml").write_text('<project xmlns="http://maven.apache.org/POM/4.0.0"><groupId>com.aliyun.odps</groupId><artifactId>agentic-sdk</artifactId><version>2.0.0</version></project>')
+            (project / "examples/pom.xml").write_text('<project xmlns="http://maven.apache.org/POM/4.0.0"><properties><agentic-sdk.version>1.6.9</agentic-sdk.version></properties></project>')
+            with self.assertRaisesRegex(ValueError, "example dependency"):
+                release.read_project(project)
+
     def test_current_project_has_resolved_identity(self):
         self.assertTrue(release.read_project(MODULE.parent.parent))
 
