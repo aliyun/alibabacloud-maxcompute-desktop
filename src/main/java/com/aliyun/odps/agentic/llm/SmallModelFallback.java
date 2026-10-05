@@ -59,7 +59,7 @@ public final class SmallModelFallback {
         if (modelId == null) return false;
         String lower = modelId.toLowerCase();
         return lower.contains("haiku") || lower.contains("mini")
-            || lower.contains("flash") || lower.contains("small");
+            || lower.contains("nano") || lower.contains("flash") || lower.contains("small");
     }
 
     /** 上下文压缩操作的最大输出 Token 数。 */

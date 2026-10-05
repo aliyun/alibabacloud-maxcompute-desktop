@@ -1,5 +1,6 @@
 package com.aliyun.odps.agentic.llm.provider;
 
+import com.aliyun.odps.agentic.llm.SmallModelFallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,22 +28,6 @@ import java.util.Set;
 public final class ProviderManager {
 
     private static final Logger log = LoggerFactory.getLogger(ProviderManager.class);
-
-    /** 模型排序优先级列表。 */
-    private static final List<String> SORT_PRIORITY = List.of(
-        "gpt-5", "claude-sonnet-4", "big-pickle", "gemini-3-pro"
-    );
-
-    /** 小模型优先级列表。 */
-    private static final List<String> SMALL_MODEL_PRIORITY = List.of(
-        "claude-haiku-4-5",
-        "claude-haiku-4.5",
-        "3-5-haiku",
-        "3.5-haiku",
-        "gemini-3-flash",
-        "gemini-2.5-flash",
-        "gpt-5-nano"
-    );
 
     /** 活跃提供者，按提供者 ID 索引。 */
     private final Map<String, ProviderConfig> providers;
@@ -310,15 +295,15 @@ public final class ProviderManager {
         var provider = providers.get(providerID);
         if (provider == null) return Optional.empty();
 
-        // 按优先级搜索
-        for (var pattern : SMALL_MODEL_PRIORITY) {
-            for (var entry : provider.models().entrySet()) {
-                if (entry.getKey().contains(pattern)) {
-                    return Optional.of(entry.getValue());
-                }
+        var candidates = new ArrayList<ModelInfo>();
+        for (var model : provider.models().values()) {
+            if (SmallModelFallback.isSmallModel(model.id())
+                    || SmallModelFallback.isSmallModel(model.family())) {
+                candidates.add(model);
             }
         }
-        return Optional.empty();
+        sort(candidates);
+        return candidates.isEmpty() ? Optional.empty() : Optional.of(candidates.getFirst());
     }
 
     /**
@@ -326,9 +311,9 @@ public final class ProviderManager {
      *
      * <p>排序规则：
      * <ol>
-     *   <li>优先级列表匹配（gpt-5、claude-sonnet-4 等）— 越高越优先</li>
-     *   <li>ID 中包含 "latest" 的获得优先</li>
-     *   <li>字母倒序（较新版本排在前面）</li>
+     *   <li>显式覆盖但未填写日期的模型优先，其余按目录发布日期排序</li>
+     *   <li>同日期时，latest 别名优先</li>
+     *   <li>最后按 ID 倒序稳定排序</li>
      * </ol>
      *
      * @param models 待排序的模型列表
@@ -336,12 +321,8 @@ public final class ProviderManager {
      */
     public static <T extends ModelInfo> List<T> sort(List<T> models) {
         models.sort(Comparator
-            .<T, Integer>comparing(m -> {
-                for (int i = 0; i < SORT_PRIORITY.size(); i++) {
-                    if (m.id().contains(SORT_PRIORITY.get(i))) return i;
-                }
-                return -1;
-            }, Comparator.reverseOrder())
+            .<T, String>comparing(m -> m.releaseDate() == null || m.releaseDate().isBlank()
+                ? "9999-12-31" : m.releaseDate(), Comparator.reverseOrder())
             .thenComparing(m -> m.id().contains("latest") ? 0 : 1)
             .thenComparing(ModelInfo::id, Comparator.reverseOrder())
         );

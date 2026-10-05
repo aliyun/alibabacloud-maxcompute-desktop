@@ -53,8 +53,7 @@ import java.util.*;
  * HarnessEngine engine = HarnessEngine.builder()
  *     .workDir(Path.of("/my/project"))
  *     .llmClient(myLlmClient)
- *     .model(Anthropic.configure("sk-ant-xxx")
- *         .model("claude-sonnet-4-20250514", new ModelLimit(200000, null, 16384)))
+ *     .model(configuredModel)
  *     .build();
  *
  * // 2. 定义代理

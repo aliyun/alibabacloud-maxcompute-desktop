@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
  *
  * <p>按照以下顺序拼接系统提示词的各个段落：
  * <ol>
- *   <li>提供者基础提示词（或代理自定义提示词）</li>
+ *   <li>模型无关的基础提示词（或代理自定义提示词）</li>
  *   <li>环境信息（模型名称、工作目录、Git 状态、平台、日期）</li>
  *   <li>项目指令文件（AGENTS.md / CLAUDE.md 等）</li>
  *   <li>技能列表（XML 格式）</li>
@@ -99,7 +99,7 @@ public class SystemPromptBuilder {
         if (exactPrompt.isPresent()) return exactPrompt.get();
         List<String> sections = new ArrayList<>();
 
-        // 1. 提供者基础提示词或代理自定义提示词
+        // 1. 基础提示词或代理自定义提示词
         String agentPrompt = agent.getSystemPrompt(ignored -> resolveProviderPrompt(model.apiId()));
         if (agentPrompt != null && !agentPrompt.isEmpty()) {
             sections.add(agentPrompt);
@@ -133,10 +133,10 @@ public class SystemPromptBuilder {
     }
 
     /**
-     * 返回通用基础提示词。模型差异由协议和能力配置处理。
+     * 使用模型无关的基础提示词。具体能力由代理定义和运行时工具决定。
      *
-     * @param modelApiId 模型 API ID；保留参数以兼容现有调用方
-     * @return 与模型名称无关的基础提示词
+     * @param modelApiId 模型 API ID，保留供 AgentDef 的回调接口调用
+     * @return 基础提示词
      */
     public String resolveProviderPrompt(String modelApiId) {
         return loadPromptResource("default.txt");
@@ -270,34 +270,23 @@ public class SystemPromptBuilder {
     /**
      * 自动发现并加载指令文件。
      *
-     * <p>发现顺序：CLAUDE.md（或 .claude/CLAUDE.md）、AGENTS.md、CONTEXT.md、代理自定义文件。
+     * <p>发现顺序：项目 AGENTS.md；若不存在则回退到项目 CLAUDE.md；然后 CONTEXT.md 和代理自定义文件。
      */
     private String buildInstructionFiles(String workDir, AgentDef agent) {
         LinkedHashSet<String> fileNames = new LinkedHashSet<>();
 
-        // ── 全局指令文件 ──
-        String home = System.getProperty("user.home");
-        if (home != null) {
-            Path globalAgentsMd = Path.of(home, ".config", "opencode", "AGENTS.md");
-            if (Files.exists(globalAgentsMd)) {
-                fileNames.add(globalAgentsMd.toString());
-            }
-            Path globalClaudeMd = Path.of(home, ".claude", "CLAUDE.md");
-            if (Files.exists(globalClaudeMd)) {
-                fileNames.add(globalClaudeMd.toString());
-            }
-        }
-
         // ── 项目级指令文件 ──
+        Path agentsMd = Path.of(workDir, "AGENTS.md");
         Path claudeMd = Path.of(workDir, "CLAUDE.md");
         Path claudeMdAlt = Path.of(workDir, ".claude", "CLAUDE.md");
-        if (Files.exists(claudeMd)) {
+        if (Files.isRegularFile(agentsMd) && Files.isReadable(agentsMd)) {
+            fileNames.add("AGENTS.md");
+        } else if (Files.isRegularFile(claudeMd) && Files.isReadable(claudeMd)) {
             fileNames.add("CLAUDE.md");
-        } else if (Files.exists(claudeMdAlt)) {
+        } else if (Files.isRegularFile(claudeMdAlt) && Files.isReadable(claudeMdAlt)) {
             fileNames.add(".claude/CLAUDE.md");
         }
 
-        fileNames.add("AGENTS.md");
         fileNames.add("CONTEXT.md");
 
         List<String> agentFiles = agent.getInstructionFiles();

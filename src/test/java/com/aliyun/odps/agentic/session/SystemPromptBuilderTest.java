@@ -13,8 +13,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * SystemPromptBuilder tests — verifies the multi-layer prompt assembly
- * and claims tracking, faithful to opencode session/system.ts.
+ * SystemPromptBuilder tests — verifies prompt assembly and claims tracking.
  */
 class SystemPromptBuilderTest {
 
@@ -122,6 +121,15 @@ class SystemPromptBuilderTest {
     }
 
     @Test
+    void resolveProviderPromptIsModelIndependent() {
+        String prompt = builder.resolveProviderPrompt("gpt-6");
+        assertEquals(prompt, builder.resolveProviderPrompt("gpt-5"));
+        assertEquals(prompt, builder.resolveProviderPrompt("claude-sonnet-4-20250514"));
+        assertEquals(prompt, builder.resolveProviderPrompt(null));
+        assertFalse(prompt.contains("opencode"));
+    }
+
+    @Test
     void modelNamesUseTheSameNeutralPrompt() {
         String expected = builder.resolveProviderPrompt(null);
         assertFalse(expected.isBlank());
@@ -216,7 +224,7 @@ class SystemPromptBuilderTest {
     }
 
     @Test
-    void buildWithGlobalClaudeFileNormalizesTrailingSlashInHome() throws Exception {
+    void buildIgnoresGlobalClaudeInstructions() throws Exception {
         String originalHome = System.getProperty("user.home");
         Path fakeHome = tempDir.resolve("fake-home");
         Path globalClaudeMd = fakeHome.resolve(".claude").resolve("CLAUDE.md");
@@ -226,9 +234,8 @@ class SystemPromptBuilderTest {
         try {
             String prompt = builder.build(testAgent, model, tempDir.resolve("workspace").toString());
 
-            assertTrue(prompt.contains("Global Instructions"));
-            assertTrue(prompt.contains(globalClaudeMd.toString()));
-            assertFalse(prompt.contains(fakeHome + "//.claude/CLAUDE.md"));
+            assertFalse(prompt.contains("Global Instructions"));
+            assertFalse(prompt.contains(globalClaudeMd.toString()));
         } finally {
             if (originalHome == null) {
                 System.clearProperty("user.home");
@@ -236,6 +243,26 @@ class SystemPromptBuilderTest {
                 System.setProperty("user.home", originalHome);
             }
         }
+    }
+
+    @Test
+    void projectAgentsFileTakesPrecedenceOverClaudeFile() throws Exception {
+        java.nio.file.Files.writeString(tempDir.resolve("AGENTS.md"), "Current project instructions");
+        java.nio.file.Files.writeString(tempDir.resolve("CLAUDE.md"), "Old model-specific instructions");
+
+        String prompt = builder.build(testAgent, model, tempDir.toString());
+
+        assertTrue(prompt.contains("Current project instructions"));
+        assertFalse(prompt.contains("Old model-specific instructions"));
+    }
+
+    @Test
+    void projectClaudeFileIsFallbackWhenAgentsFileIsAbsent() throws Exception {
+        java.nio.file.Files.writeString(tempDir.resolve("CLAUDE.md"), "Fallback project instructions");
+
+        String prompt = builder.build(testAgent, model, tempDir.toString());
+
+        assertTrue(prompt.contains("Fallback project instructions"));
     }
 
     @Test

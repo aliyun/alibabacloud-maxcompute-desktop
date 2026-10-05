@@ -18,10 +18,10 @@ import java.util.List;
  * <p>Usage:
  * <pre>{@code
  * # With Anthropic
- * ANTHROPIC_API_KEY=sk-... java CodingAssistant "Refactor the main method"
+ * ANTHROPIC_API_KEY=... AGENT_MODEL=... MODEL_CONTEXT_TOKENS=... MODEL_OUTPUT_TOKENS=... java CodingAssistant "Refactor the main method"
  *
  * # With OpenAI
- * OPENAI_API_KEY=sk-... java CodingAssistant "Explain this code"
+ * OPENAI_API_KEY=... AGENT_MODEL=... MODEL_CONTEXT_TOKENS=... MODEL_OUTPUT_TOKENS=... java CodingAssistant "Explain this code"
  * }</pre>
  */
 public class CodingAssistant {
@@ -32,20 +32,28 @@ public class CodingAssistant {
         // ── 1. Configure LLM provider via Provider facade ──
         String anthropicKey = System.getenv("ANTHROPIC_API_KEY");
         String openaiKey = System.getenv("OPENAI_API_KEY");
+        if ((anthropicKey == null || anthropicKey.isBlank())
+                && (openaiKey == null || openaiKey.isBlank())) {
+            throw new IllegalStateException(
+                "Set ANTHROPIC_API_KEY or OPENAI_API_KEY environment variable");
+        }
+        String modelId = requiredEnv("AGENT_MODEL");
+        int contextTokens = Integer.parseInt(requiredEnv("MODEL_CONTEXT_TOKENS"));
+        int outputTokens = Integer.parseInt(requiredEnv("MODEL_OUTPUT_TOKENS"));
+        ModelLimit modelLimit = new ModelLimit(contextTokens, null, outputTokens);
         String provider;
         Model model;
 
         if (anthropicKey != null && !anthropicKey.isBlank()) {
             provider = "anthropic";
             model = Anthropic.configure(anthropicKey)
-                .model("claude-sonnet-4-20250514", new ModelLimit(200000, null, 16384));
+                .model(modelId, modelLimit);
         } else if (openaiKey != null && !openaiKey.isBlank()) {
             provider = "openai";
             model = OpenAI.configure(openaiKey)
-                .model("gpt-4o", new ModelLimit(128000, null, 16384));
+                .model(modelId, modelLimit);
         } else {
-            throw new IllegalStateException(
-                "Set ANTHROPIC_API_KEY or OPENAI_API_KEY environment variable");
+            throw new IllegalStateException("No configured provider");
         }
 
         // ── 2. Create LLM client — no manual transform/key registration needed ──
@@ -85,6 +93,14 @@ public class CodingAssistant {
         });
 
         System.out.println("\n✅ Final response: " + result.getTextContent());
+    }
+
+    private static String requiredEnv(String name) {
+        String value = System.getenv(name);
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException("Set " + name + " environment variable");
+        }
+        return value;
     }
 
     /**

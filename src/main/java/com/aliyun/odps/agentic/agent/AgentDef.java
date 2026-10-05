@@ -38,7 +38,7 @@ public interface AgentDef {
     /**
      * 构建当前代理的系统提示词。
      *
-     * @param modelProvider 接收模型 ID 并返回提供者特定前缀的函数
+     * @param modelProvider 接收模型 ID 并返回基础提示词的函数
      * @return 完整的系统提示词内容
      */
     default String getSystemPrompt(Function<String, String> modelProvider) {

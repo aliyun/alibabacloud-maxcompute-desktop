@@ -35,6 +35,7 @@ class SmallModelFallbackTest {
     void isSmallModelDetection() {
         assertTrue(SmallModelFallback.isSmallModel("claude-3.5-haiku"));
         assertTrue(SmallModelFallback.isSmallModel("gpt-4o-mini"));
+        assertTrue(SmallModelFallback.isSmallModel("gpt-6-nano"));
         assertTrue(SmallModelFallback.isSmallModel("gemini-2.5-flash"));
         assertFalse(SmallModelFallback.isSmallModel("claude-4-sonnet"));
         assertFalse(SmallModelFallback.isSmallModel("gpt-4o"));
