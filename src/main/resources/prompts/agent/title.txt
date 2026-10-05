@@ -1,0 +1,4 @@
+Name the supplied conversation so its user can find it again.
+Return one line of at most 50 characters in the user's language. Describe the main task
+or topic, keeping a useful technical identifier when present. Do not answer the task,
+invoke tools or explain your choice. For a greeting, use a short conversational title.

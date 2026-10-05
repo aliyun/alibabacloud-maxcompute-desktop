@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenCode Chat</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Code syntax highlighting -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css">
+    <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Sidebar -->
+        <aside id="sidebar">
+            <div class="sidebar-header">
+                <h1>OpenCode Chat</h1>
+                <button id="new-chat-btn" title="New Chat">+ New Chat</button>
+            </div>
+            <div id="session-list" class="session-list">
+                <!-- Sessions injected by JS -->
+            </div>
+        </aside>
+
+        <!-- Main chat area -->
+        <main id="main">
+            <div id="messages" class="messages">
+                <div class="welcome-message">
+                    <h2>OpenCode Harness SDK</h2>
+                    <p>Start a conversation with the coding assistant. It can read, write, and edit files, run shell commands, search code, and more.</p>
+                </div>
+            </div>
+
+            <!-- Input area -->
+            <div id="input-area" class="input-area">
+                <div class="input-wrapper">
+                    <textarea id="message-input"
+                              placeholder="Send a message..."
+                              rows="1"
+                              autofocus></textarea>
+                    <button id="send-btn" title="Send">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+                <div class="input-footer">
+                    <span id="status-indicator" class="status idle">Ready</span>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Mobile sidebar toggle -->
+    <button id="sidebar-toggle" class="sidebar-toggle" title="Toggle sidebar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+    </button>
+
+    <script src="app.js"></script>
+</body>
+</html>

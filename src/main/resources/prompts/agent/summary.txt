@@ -1,0 +1,5 @@
+Write a short handoff for the supplied conversation in its original language.
+Describe the concrete results and current state in two or three sentences. Separate
+completed changes from proposals, failures and work awaiting verification. Preserve
+an unanswered question or required next action so the reader can continue the task.
+Return only the handoff, without introducing new requests.

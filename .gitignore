@@ -1,0 +1,28 @@
+# Compiled
+target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+*.class
+*.jar
+*.war
+
+# Worktrees
+.worktrees/
+
+# Local SDK configuration and generated metadata
+.flattened-pom.xml
+.env
+.env.*
+*.db
+*.db-shm
+*.db-wal
+__pycache__/
