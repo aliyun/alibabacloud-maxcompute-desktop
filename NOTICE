@@ -28,3 +28,8 @@ This product includes derivative works of opencode
     LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
+
+sqlite-vec v0.1.9 native extensions
+Copyright 2024 Alex Garcia
+https://github.com/asg017/sqlite-vec
+Dual licensed under MIT or Apache-2.0. License texts accompany the native resources in sqlite-vec/.

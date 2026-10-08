@@ -89,7 +89,7 @@ public final class ModelOperationRunner {
                 failure == null ? null : failure.getClass().getSimpleName());
         }
 
-        @Override public void close() { complete(); }
+    @Override public void close() { complete(); }
 
         private void emit(Phase phase, String detail) {
             Event event = new Event(id, name, modality, phase,

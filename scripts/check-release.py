@@ -45,6 +45,33 @@ def check_artifacts(project, version, signed=False):
         for entry in ("com/aliyun/odps/agentic/HarnessEngine.class", "META-INF/LICENSE", "META-INF/NOTICE", "prompts/default.txt"):
             if entry not in jar.namelist():
                 raise ValueError("missing JAR entry: " + entry)
+        kernel_entries = (
+            "config/AgentAdvancedSettings.class", "config/AIConfigSnapshot.class",
+            "storage/JdbcSqlDatabase.class", "tool/ContextToolRegistry.class",
+            "tool/schema/ToolDefinitionFactory.class", "skill/manifest/ManifestCatalog.class",
+            "mcp/ManagedMcpManager.class", "mcp/ManagedMcpToolBridge.class",
+            "mcp/McpOAuthService.class", "mcp/SqliteMcpServerRepository.class",
+            "memory/context/MemoryServiceEngine.class", "memory/index/SqliteSemanticMemoryStore.class",
+            "memory/index/SqliteEpisodicMemoryService.class", "memory/knowledge/KnowledgeBaseService.class",
+        )
+        for entry in kernel_entries:
+            if "com/aliyun/odps/agentic/" + entry not in jar.namelist():
+                raise ValueError("missing SDK kernel class: " + entry)
+        for platform, extension in (("linux-aarch64", "so"), ("linux-x86_64", "so"),
+                                    ("macos-aarch64", "dylib"), ("macos-x86_64", "dylib"),
+                                    ("windows-x86_64", "dll")):
+            entry = "sqlite-vec/" + platform + "/vec0." + extension
+            if entry not in jar.namelist():
+                raise ValueError("missing vector extension: " + entry)
+        for entry in ("sqlite-vec/LICENSE-MIT", "sqlite-vec/LICENSE-APACHE"):
+            if entry not in jar.namelist():
+                raise ValueError("missing vector extension license: " + entry)
+        expected_migrations = {path.name for path in (project / "src/main/resources/db/migration").glob("*.sql")}
+        if not expected_migrations:
+            raise ValueError("memory migrations missing from SDK source")
+        for filename in expected_migrations:
+            if "db/migration/" + filename not in jar.namelist():
+                raise ValueError("missing memory migration: " + filename)
         prompt_entries = [entry for entry in jar.namelist() if entry.startswith("prompts/") and entry.endswith(".txt")]
         expected_prompts = {"prompts/default.txt", "prompts/agent/compaction.txt", "prompts/agent/explore.txt", "prompts/agent/summary.txt", "prompts/agent/title.txt"}
         if set(prompt_entries) != expected_prompts:

@@ -27,7 +27,10 @@ SDK 的设计与实现借鉴了 [OpenCode](https://github.com/anomalyco/opencode
 | 模型协议 | Anthropic、OpenAI Chat Completions、OpenAI Responses、兼容协议及自定义 `LLMClient` / `ProviderTransform` |
 | 多模态消息 | `MessagePart` 表达文本、推理、图片、文件引用和工具结果；发送格式由所选协议适配器处理 |
 | 上下文管理 | 工具结果裁剪、自动或手动压缩、分块摘要；宿主也可自行管理模型输入投影 |
-| MCP 与 Skills | 本地 stdio / 远程 SSE MCP 工具发现，以及 `SKILL.md` 发现、加载和技能白名单 |
+| MCP 与 Skills | `ManagedMcpManager` 管理 stdio 与 Streamable HTTP/SSE 连接、重连、资源、提示词与工具变更；OAuth/PKCE、令牌刷新和 SQLite 连接配置也由 SDK 提供；`ManifestCatalog` 管理技能发现、启用状态和热加载 |
+| 上下文工具注册 | `ContextToolRegistry` 统一注册、禁用、超时、取消、输出限制与执行记录；`ContextToolAdapter` 接入 Harness，分层 Schema 与稳定缓存由 SDK 构建 |
+| 记忆与知识库 | 工作记忆、SQLite 语义与情节记忆、会话索引、过期清理，以及知识库切块、增量构建、向量和全文混合检索 |
+| Agent 配置 | 配置快照、数值边界、SQLite 高级设置、特性开关、推理配置解析和视觉能力探测 |
 | 模型操作生命周期 | `ModelOperationRunner` 统一文本、视觉、图像、视频、音频等操作的开始、进度和终态事件 |
 | 实时传输 | `RealtimeWebSocketTransport` 提供双向文本帧传输；供应商的事件解释与音频处理由宿主接入 |
 | 观测与回放 | `AgentEvent` 提供文本、推理、工具、权限、压缩、消息落盘和终态事件，供 UI、日志或遥测消费 |
@@ -48,8 +51,14 @@ flowchart TD
 ```
 
 内核负责运行与状态推进。宿主负责领域工具、身份认证、业务权限、任务审批、
-供应商配置和界面呈现。例如 MaxQuery Studio 将 SQL、项目、画布和 Checkpoint
+凭据存储和界面呈现。例如 MaxQuery Studio 将 SQL、项目、画布和 Checkpoint
 接入这些扩展点，并把 SDK 消息与事件投影为产品的会话和执行轨迹。
+
+通用配置、记忆、工具和 MCP 实现位于 SDK；宿主通过 `SqlDatabase`、
+`MemorySessionSource`、`SessionEpisodeSource`、`ManifestResources`、
+`DocumentTextExtractor` 和 `KnowledgeRetrievalProvider` 等接口接入数据库事务、
+会话归档、文档解析、认证和检索服务。SDK 提供 `JdbcSqlDatabase`，无需 Spring
+即可运行 SQLite 配置与记忆。知识库内置 sqlite-vec 的多平台资源。
 
 Java 内核不依赖 Spring、Studio 服务端或前端。可选浏览器适配源码位于 `web/`，
 目前提供 Citywalk 供应商适配，由宿主的 TypeScript 工程及供应商依赖编译，
@@ -143,6 +152,10 @@ public class QuickStart {
 | 需要接入的内容 | 推荐入口 |
 | --- | --- |
 | 自定义工具 | 实现 `ToolDef`，经 `AgentDef.getTools()` 返回或使用 `AgentDefBuilder.addTool()` |
+| 已有上下文工具体系 | 实现 `ContextTool<C, R>`，使用 `ContextToolRegistry` 注册和执行，经 `ContextToolAdapter` 交给 Harness |
+| 持久化记忆 | 使用 `memory.index` 的 schema 初始化器与 SQLite store，向 `MemoryServiceEngine` 提供宿主会话源 |
+| 外部 MCP 连接 | 使用 `ManagedMcpManager`；数据库、OAuth Token 和路径解析通过构造参数注入 |
+| 技能管理 | 使用 `ManifestCatalog`、`SkillManifestLoader`；Spring 或其他容器可提供 `ManifestResources` |
 | 全部工具由宿主管理 | 覆盖 `includeBuiltinTools()`，通过 `getToolBatchExecutor()` 接入业务执行流水线 |
 | 原样使用宿主提示词 | 覆盖 `getExactSystemPrompt()`；SDK 不再追加环境、指令文件或技能段落 |
 | 结束前校验交付结果 | 覆盖 `getRunPolicy()`，返回接受、补充反馈继续执行或挂起的决定 |
@@ -209,3 +222,25 @@ GitHub Actions 在 Java 21 和 Java 25 上执行测试、验证发布产物并�
 
 本项目使用 [Apache-2.0](LICENSE) 许可证。
 借鉴了 OpenCode 的架构和代码；第三方版权和许可说明保留在 [NOTICE](NOTICE) 中。
+
+## 独立运行与验收
+
+通用模块的独立回归不需要 Studio：
+
+```bash
+mvn -Dtest='Standalone*Test' test
+```
+
+这组测试覆盖 JDBC 配置与记忆冷启动、情节索引、工具取消与上下文传播、
+JAR 内技能发现、真实 MCP 子进程，以及知识库原生向量索引和增量刷新。
+
+真实模型测试需显式启用，并由运行环境提供凭据：
+
+```bash
+AGENTIC_LIVE_ACCEPTANCE=true mvn -Dtest=RealE2eTest,RealConsolidationTest test
+```
+
+运行前设置 `OPENAI_API_KEY`、完整请求地址 `OPENAI_BASE_URL` 与 `E2E_TEST_MODEL`。
+`RealConsolidationTest` 的知识库用例需要同一服务支持百炼原生 embedding/rerank
+接口；普通 OpenAI Chat Completions 服务仅运行 `RealE2eTest`。
+真实验收验证 API 与内核行为；桌面麦克风、扬声器和浏览器交互需在宿主环境验收。
